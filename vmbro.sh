@@ -35,7 +35,7 @@ case "$CMD" in
         case "$SUB" in
             view) command_config_view ;;
             edit) command_config_edit ;;
-            *) echo "Usage: vmctl config [view|edit]";;
+            *) echo "Usage: vmbro config [view|edit]";;
         esac
         ;;
 
@@ -45,13 +45,13 @@ case "$CMD" in
 
     *)
         echo "Available commands:
-  vmctl setup
-  vmctl restart [service]
-  vmctl status [service]
-  vmctl reset [service]
-  vmctl config view
-  vmctl config edit
-  vmctl logs [service]
+  vmbro setup
+  vmbro restart [service]
+  vmbro status [service]
+  vmbro reset [service]
+  vmbro config view
+  vmbro config edit
+  vmbro logs [service]
 "
         ;;
 esac
