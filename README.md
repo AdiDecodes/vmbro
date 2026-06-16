@@ -13,7 +13,7 @@ Fresh VPS to production in minutes.
 `~54 KB total` · `0 required dependencies` · Ubuntu/Debian · root/sudo
 
 ```bash
-git clone https://github.com/your-user/vmbro
+git clone https://github.com/AdiDecodes/vmbro
 cd vmbro && chmod +x vmbro.sh
 sudo ./vmbro.sh init
 ```
