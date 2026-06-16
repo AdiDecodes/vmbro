@@ -22,13 +22,13 @@ prompt_yes_no() {
 _draw_menu() {
     local selected="$1"
     shift
-    local options=("$@")
     local i
+    local options=("$@")
     for ((i=0; i<${#options[@]}; i++)); do
         if [[ "$i" -eq "$selected" ]]; then
-            echo -e "  ${BLUE}❯${RESET} ${options[$i]}"
+            echo -e "  ${BLUE}❯${RESET} ${options[$i]}" >&2
         else
-            echo -e "    ${options[$i]}"
+            echo -e "    ${options[$i]}" >&2
         fi
     done
 }
@@ -39,26 +39,29 @@ prompt_select() {
     local options=("$@")
     local count=${#options[@]}
     local selected=0
+    local i
 
-    tput civis 2>/dev/null
+    tput civis > /dev/tty 2>/dev/null
 
-    echo ""
-    echo -e "  $title"
-    echo -e "  ${YELLOW}(↑↓ arrows, j/k, or number to select — Enter to confirm)${RESET}"
-    echo ""
+    # Print header + initial menu to stderr so it shows even inside $(...)
+    echo "" >&2
+    echo -e "  $title" >&2
+    echo -e "  ${YELLOW}Use ↑↓ arrows or j/k to move, number to jump, Enter to confirm${RESET}" >&2
+    echo "" >&2
     _draw_menu "$selected" "${options[@]}"
 
     while true; do
         local key seq1 seq2
-        IFS= read -rsn1 key 2>/dev/null
+        IFS= read -rsn1 key < /dev/tty
 
         if [[ "$key" == $'\x1b' ]]; then
-            IFS= read -rsn1 -t 0.1 seq1 2>/dev/null
-            IFS= read -rsn1 -t 0.1 seq2 2>/dev/null
+            IFS= read -rsn1 -t 0.1 seq1 < /dev/tty
+            IFS= read -rsn1 -t 0.1 seq2 < /dev/tty
             key="${key}${seq1}${seq2}"
         fi
 
         local confirm=false
+
         case "$key" in
             $'\x1b[A'|k|K)
                 (( selected = (selected - 1 + count) % count ))
@@ -79,21 +82,24 @@ prompt_select() {
         esac
 
         if $confirm; then
-            tput cnorm 2>/dev/null
-            local clear_lines=$(( count + 3 ))
+            tput cnorm > /dev/tty 2>/dev/null
+            # Clear the menu (header=4 lines + option lines)
+            local clear_lines=$(( count + 4 ))
             for ((i=0; i<clear_lines; i++)); do
-                tput cuu1 2>/dev/null; tput el 2>/dev/null
+                tput cuu1 > /dev/tty 2>/dev/null
+                tput el   > /dev/tty 2>/dev/null
             done
-            echo -e "  $title"
-            echo -e "  ${GREEN}❯${RESET} ${options[$selected]}"
-            echo ""
+            echo -e "  $title" >&2
+            echo -e "  ${GREEN}❯${RESET} ${options[$selected]}" >&2
+            echo "" >&2
+            # Only the result goes to stdout — captured by $()
             echo "${options[$selected]}"
             return
         fi
 
-        # Redraw in place
-        for ((i=0; i<=count; i++)); do
-            tput cuu1 2>/dev/null
+        # Redraw menu in place: move up (count) option lines
+        for ((i=0; i<count; i++)); do
+            tput cuu1 > /dev/tty 2>/dev/null
         done
         _draw_menu "$selected" "${options[@]}"
     done
