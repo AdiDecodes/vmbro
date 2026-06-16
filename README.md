@@ -1,80 +1,120 @@
-# VMBRO
+```
+  ██╗   ██╗███╗   ███╗██████╗ ██████╗  ██████╗
+  ██║   ██║████╗ ████║██╔══██╗██╔══██╗██╔═══██╗
+  ██║   ██║██╔████╔██║██████╔╝██████╔╝██║   ██║
+  ╚██╗ ██╔╝██║╚██╔╝██║██╔══██╗██╔══██╗██║   ██║
+   ╚████╔╝ ██║ ╚═╝ ██║██████╔╝██║  ██║╚██████╔╝
+    ╚═══╝  ╚═╝     ╚═╝╚═════╝ ╚═╝  ╚═╝ ╚═════╝
+            Your VPS deployment copilot.
+```
 
-`vmbro` is a modular, Bash-based command-line utility designed for automated provisioning and service management on Linux Virtual Machines (Ubuntu/Debian based). It provides a streamlined interface for installing, configuring, and monitoring essential web infrastructure components.
+Fresh VPS to production in minutes.
 
-## Features
+`~54 KB total` · `0 required dependencies` · Ubuntu/Debian · root/sudo
 
-- 🛠 **Interactive Setup Menu:** Clean, prompt-based GUI for installing dependencies.
-- 📦 **Modular Architecture:** Drop-in scripts for expanding supported software (e.g., Docker, NGINX, Redis).
-- 🔄 **Service Management:** unified commands for restarting, resetting, reading logs, and checking service status.
-- ⚙️ **JSON Configuration:** Maintains application state via `jq` formatted configurations.
-- 📜 **Safe Executions & Logging:** Built-in safeguards that log all script operations to a central log file for debugging.
+```bash
+git clone https://github.com/your-user/vmbro
+cd vmbro && chmod +x vmbro.sh
+sudo ./vmbro.sh init
+```
 
-## Supported Modules
+---
 
-Currently, `vmbro` comes with out-of-the-box installation and configuration support for:
-- Web Servers: **NGINX**, **Caddy**
-- Runtime Environments: **Node.js**
-- Containerization: **Docker**
-- Databases & Caching: **MongoDB**, **Redis**
+## Commands
 
-## Prerequisites
+**Deploy**
+```bash
+vmbro init                 # pick what to deploy
+vmbro deploy node          # Node.js + systemd + NGINX + SSL
+vmbro deploy nextjs        # clone, build, and serve a Next.js app
+vmbro deploy docker        # Dockerfile or docker-compose
+```
 
-- Base OS: **Ubuntu / Debian** (Uses `apt` package manager and `systemctl`).
-- **Root privileges** are required (run via `sudo`).
-- Dependencies: **jq** (required for reading and writing `config.json`).
+**Diagnose**
+```bash
+vmbro doctor               # health check with scoring
+vmbro report               # CPU, RAM, disk, SSL snapshot
+vmbro report --json        # same but JSON
+vmbro dashboard            # live terminal view, auto-refreshes
+```
 
-## Project Structure
+**Secure**
+```bash
+vmbro secure               # UFW, SSH hardening, fail2ban, auto-updates
+```
 
-```text
+**Backup**
+```bash
+vmbro backup create        # MongoDB, Redis, or Docker volumes
+vmbro backup list
+```
+
+**Manage**
+```bash
+vmbro status  [service]
+vmbro restart [service]
+vmbro logs    [service]
+vmbro reset   [service]    # destructive, use with care
+vmbro config  view|edit
+```
+
+---
+
+## What `vmbro doctor` looks like
+
+```
+VMBRO Health Report
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ Docker running
+  ✓ NGINX healthy
+  ✓ SSL certificates OK
+  ⚠ Swap not configured
+  ✗ MongoDB listening on 0.0.0.0
+
+Warnings
+  -> No swap space configured
+  -> Redis exposed on public interface
+
+Critical
+  -> MongoDB is exposed on 0.0.0.0 - bind to 127.0.0.1 in /etc/mongod.conf
+
+Server Health Score: 74/100
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
+## Structure
+
+```
 vmbro/
-├── vmbro.sh             # Main executable entry point
-├── core/                # Core engine components
-│   ├── commands.sh      # Service command implementations
-│   ├── config.sh        # JSON configurations loader/writer
-│   ├── setup-menu.sh    # Interactive selection menus
-│   └── utils.sh         # Helper functions for logging, prompts, etc.
-├── modules/             # Service deployment scripts
-│   ├── caddy.sh
-│   ├── docker.sh
-│   ├── mongodb.sh
-│   ├── nginx.sh
-│   ├── node.sh
-│   └── redis.sh
-├── data/
-│   └── config.json      # Dynamic metadata state
-└── logs/
-    └── vmbro.log        # Unified action records
+├── vmbro.sh              8.9 KB  entry point, command router
+├── core/
+│   ├── commands.sh       2.1 KB  restart, status, reset, logs
+│   ├── config.sh         0.4 KB  JSON config load/write
+│   └── utils.sh          0.8 KB  logging, prompts, root check
+
+├── modules/
+│   ├── deploy.sh         8.6 KB  node, nextjs, docker
+│   ├── doctor.sh         9.5 KB  health checks
+│   ├── secure.sh         6.0 KB  hardening
+│   ├── report.sh         5.2 KB  snapshot
+│   ├── dashboard.sh      3.5 KB  live terminal view
+│   ├── backup.sh         3.8 KB  MongoDB, Redis, volumes
+│   ├── nginx.sh          0.6 KB
+│   ├── caddy.sh          0.8 KB
+│   ├── node.sh           0.4 KB
+│   ├── docker.sh         0.8 KB
+│   ├── mongodb.sh        1.1 KB
+│   └── redis.sh          0.7 KB
+├── data/config.json
+└── logs/vmbro.log
 ```
 
-## Usage
+## Dependencies
 
-Make sure the main script is executable before using it:
+None. vmbro auto-installs everything it needs.
 
-```bash
-chmod +x vmbro.sh
-```
+`jq`, `git`, `nginx`, `certbot`, `ufw`, `fail2ban`, and `docker` are installed on demand as commands require them. `curl`, `openssl`, `ss`, and `systemctl` ship with Ubuntu/Debian.
 
-### Setup Components
-
-To open the interactive menu and install components:
-
-```bash
-sudo ./vmbro.sh setup
-```
-
-### Commands Line Reference
-
-| Command | Description |
-|---|---|
-| `sudo ./vmbro.sh setup` | Opens the interactive interactive setup menu. |
-| `sudo ./vmbro.sh restart <service$|all>` | Restarts a specific service (`nginx`, `docker`, `redis`, `mongo`, or `all`). |
-| `sudo ./vmbro.sh status [service]` | Displays systemctl status. Omit the service name for an overview of all supported services. |
-| `sudo ./vmbro.sh reset <service$|all>` | ⚠️ **DANGEROUS**: Wipes data or configurations and resets the specified service layer. |
-| `sudo ./vmbro.sh config view` | Prints the current parsed `config.json` state. |
-| `sudo ./vmbro.sh config edit` | Opens the configuration file in `nano`. |
-| `sudo ./vmbro.sh logs <service>` | Shows the last 50 journalctl logs for the given service. |
-
-## License
-
-MIT License (or your desired respective repository license).
+MIT License
