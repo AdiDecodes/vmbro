@@ -20,12 +20,93 @@ prompt_yes_no() {
 }
 
 prompt_select() {
-    echo ""
-    echo "$1"
+    local title="$1"
     shift
-    select opt in "$@"; do
-        echo "$opt"
-        return
+    local options=("$@")
+    local count=${#options[@]}
+    local selected=0
+
+    # Save terminal state and hide cursor
+    tput civis 2>/dev/null
+    local cleanup() { tput cnorm 2>/dev/null; }
+    trap cleanup RETURN
+
+    _draw_menu() {
+        local i
+        for ((i=0; i<count; i++)); do
+            if [[ "$i" -eq "$selected" ]]; then
+                echo -e "  ${BLUE}❯${RESET} ${options[$i]}"
+            else
+                echo -e "    ${options[$i]}"
+            fi
+        done
+    }
+
+    echo ""
+    echo -e "  $title"
+    echo -e "  ${YELLOW}(↑↓ or j/k to move, Enter or number to select)${RESET}"
+    echo ""
+
+    _draw_menu
+
+    while true; do
+        # Read a single key (handles escape sequences)
+        local key
+        IFS= read -rsn1 key 2>/dev/null
+
+        if [[ "$key" == $'\x1b' ]]; then
+            # Escape sequence — read two more bytes
+            local seq1 seq2
+            IFS= read -rsn1 -t 0.1 seq1 2>/dev/null
+            IFS= read -rsn1 -t 0.1 seq2 2>/dev/null
+            key="${key}${seq1}${seq2}"
+        fi
+
+        case "$key" in
+            $'\x1b[A'|k|K)   # Up arrow or k
+                (( selected = (selected - 1 + count) % count ))
+                ;;
+            $'\x1b[B'|j|J)   # Down arrow or j
+                (( selected = (selected + 1) % count ))
+                ;;
+            '')               # Enter
+                tput cnorm 2>/dev/null
+                # Move cursor up past the menu lines and clear them
+                local clear_lines=$(( count + 3 ))
+                for ((i=0; i<clear_lines; i++)); do
+                    tput cuu1 2>/dev/null; tput el 2>/dev/null
+                done
+                echo -e "  $title"
+                echo -e "  ${GREEN}❯${RESET} ${options[$selected]}"
+                echo ""
+                echo "${options[$selected]}"
+                return
+                ;;
+            [1-9])            # Number key
+                local num=$(( key - 1 ))
+                if [[ "$num" -lt "$count" ]]; then
+                    selected=$num
+                    tput cnorm 2>/dev/null
+                    local clear_lines=$(( count + 3 ))
+                    for ((i=0; i<clear_lines; i++)); do
+                        tput cuu1 2>/dev/null; tput el 2>/dev/null
+                    done
+                    echo -e "  $title"
+                    echo -e "  ${GREEN}❯${RESET} ${options[$selected]}"
+                    echo ""
+                    echo "${options[$selected]}"
+                    return
+                fi
+                continue
+                ;;
+        esac
+
+        # Redraw menu in place
+        tput cuu1 2>/dev/null
+        for ((i=0; i<count; i++)); do
+            tput cuu1 2>/dev/null
+        done
+        _draw_menu
     done
 }
 
